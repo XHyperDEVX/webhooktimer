@@ -1,0 +1,8 @@
+/vendor/
+/bin/
+webhooktimer
+*.db
+*.db-journal
+*.exe
+*.test
+.DS_Store
