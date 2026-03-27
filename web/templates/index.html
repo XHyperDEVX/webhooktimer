@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <nav class="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
+        <div class="px-3 py-3 lg:px-5 lg:pl-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center justify-start">
+                    <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap">Webhook Timer</span>
+                </div>
+                <div class="flex items-center">
+                    <button id="new-timer-btn" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 focus:outline-none">New Timer</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="pt-20 px-4">
+        <div class="bg-white shadow-md rounded my-6 overflow-x-auto">
+            <table class="min-w-full leading-normal">
+                <thead>
+                    <tr>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Execution</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Countdown</th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="timer-list">
+                    <!-- Timer entries will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- New/Edit Timer Modal -->
+    <div id="timer-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold" id="modal-title">New Timer</p>
+                    <div class="modal-close cursor-pointer z-50" id="modal-close-btn">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <form id="timer-form">
+                    <input type="hidden" id="timer-id">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Name</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Timer Name" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="webhookURL">Webhook URL</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="webhookURL" type="url" placeholder="https://..." required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="method">Method</label>
+                        <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="method">
+                            <option value="POST">POST</option>
+                            <option value="GET">GET</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="mode">Mode</label>
+                        <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="mode">
+                            <option value="fixed">Fixed</option>
+                            <option value="random">Random</option>
+                        </select>
+                    </div>
+                    <div id="fixed-params" class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="fixedInterval">Fixed Interval (HH:MM:SS)</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="fixedInterval" type="text" placeholder="00:00:10">
+                    </div>
+                    <div id="random-params" class="hidden mb-4 flex gap-2">
+                        <div class="w-1/2">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="minInterval">Min (HH:MM:SS)</label>
+                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="minInterval" type="text" placeholder="00:00:05">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="maxInterval">Max (HH:MM:SS)</label>
+                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="maxInterval" type="text" placeholder="00:00:15">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="webhookTimeout">Webhook Timeout (sec)</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="webhookTimeout" type="number" value="5" min="1" max="60">
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button type="button" class="px-4 bg-transparent p-3 rounded-lg text-blue-500 hover:bg-gray-100 hover:text-blue-400 mr-2 modal-close">Cancel</button>
+                        <button type="submit" class="modal-close px-4 bg-blue-500 p-3 rounded-lg text-white hover:bg-blue-400">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logs-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">Execution Logs</p>
+                    <div class="modal-close cursor-pointer z-50" id="logs-close-btn">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div id="logs-content" class="text-sm">
+                    <!-- Logs will be populated here -->
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button class="modal-close px-4 bg-gray-500 p-3 rounded-lg text-white hover:bg-gray-400">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timers = [];
+        let socket;
+
+        function connectWS() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
+            socket.onmessage = function(event) {
+                timers = JSON.parse(event.data);
+                renderTimers();
+            };
+            socket.onclose = function() {
+                setTimeout(connectWS, 2000);
+            };
+        }
+
+        function timeToSeconds(hms) {
+            const [h, m, s] = hms.split(':').map(Number);
+            return h * 3600 + m * 60 + s;
+        }
+
+        function secondsToTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return [h, m, s].map(v => v < 10 ? "0" + v : v).join(":");
+        }
+
+        function renderTimers() {
+            const list = document.getElementById('timer-list');
+            list.innerHTML = '';
+            timers.forEach(timer => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">${timer.name}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <label class="inline-flex relative items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${timer.active ? 'checked' : ''} onchange="toggleTimer('${timer.id}', this.checked)">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">${timer.lastExecution && timer.lastExecution !== '0001-01-01T00:00:00Z' ? new Date(timer.lastExecution).toLocaleString() : 'Never'}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap countdown" data-next="${timer.nextExecution}">${timer.active ? 'Calculating...' : 'Stopped'}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="editTimer('${timer.id}')">Edit</button>
+                        <button class="text-green-600 hover:text-green-900 mr-2" onclick="showLogs('${timer.id}')">Logs</button>
+                        <button class="text-red-600 hover:text-red-900" onclick="deleteTimer('${timer.id}')">Delete</button>
+                    </td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+
+        setInterval(() => {
+            document.querySelectorAll('.countdown').forEach(el => {
+                const next = el.getAttribute('data-next');
+                if (!next || next === '0001-01-01T00:00:00Z') return;
+                const diff = new Date(next) - new Date();
+                if (diff <= 0) {
+                    el.innerText = '00:00:00';
+                } else {
+                    el.innerText = secondsToTime(Math.floor(diff / 1000));
+                }
+            });
+        }, 1000);
+
+        function toggleTimer(id, active) {
+            fetch(`/api/timers/${id}/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active })
+            });
+        }
+
+        function deleteTimer(id) {
+            if (confirm('Are you sure?')) {
+                fetch(`/api/timers/${id}`, { method: 'DELETE' });
+            }
+        }
+
+        function editTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            document.getElementById('timer-id').value = timer.id;
+            document.getElementById('name').value = timer.name;
+            document.getElementById('webhookURL').value = timer.webhookURL;
+            document.getElementById('method').value = timer.method || 'POST';
+            document.getElementById('mode').value = timer.mode;
+            document.getElementById('fixedInterval').value = secondsToTime(timer.fixedInterval);
+            document.getElementById('minInterval').value = secondsToTime(timer.minInterval);
+            document.getElementById('maxInterval').value = secondsToTime(timer.maxInterval);
+            document.getElementById('webhookTimeout').value = timer.webhookTimeout;
+            
+            toggleModeParams(timer.mode);
+            document.getElementById('modal-title').innerText = 'Edit Timer';
+            toggleModal();
+        }
+
+        function showLogs(id) {
+            fetch(`/api/timers/${id}/logs`)
+                .then(r => r.json())
+                .then(logs => {
+                    const content = document.getElementById('logs-content');
+                    content.innerHTML = logs.map(log => `
+                        <div class="mb-2 p-2 border rounded ${log.status === 'success' ? 'bg-green-100 border-green-200' : 'bg-red-100 border-red-200'}">
+                            <div class="flex justify-between font-bold">
+                                <span>${log.status.toUpperCase()}</span>
+                                <span>${new Date(log.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div>${log.message || ''}</div>
+                        </div>
+                    `).join('') || '<p>No logs yet.</p>';
+                    toggleLogsModal();
+                });
+        }
+
+        document.getElementById('new-timer-btn').onclick = () => {
+            document.getElementById('timer-form').reset();
+            document.getElementById('timer-id').value = '';
+            document.getElementById('modal-title').innerText = 'New Timer';
+            toggleModeParams('fixed');
+            toggleModal();
+        };
+
+        document.getElementById('mode').onchange = (e) => toggleModeParams(e.target.value);
+
+        function toggleModeParams(mode) {
+            if (mode === 'fixed') {
+                document.getElementById('fixed-params').classList.remove('hidden');
+                document.getElementById('random-params').classList.add('hidden');
+            } else {
+                document.getElementById('fixed-params').classList.add('hidden');
+                document.getElementById('random-params').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('timer-form').onsubmit = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('timer-id').value;
+            const data = {
+                name: document.getElementById('name').value,
+                webhookURL: document.getElementById('webhookURL').value,
+                method: document.getElementById('method').value,
+                mode: document.getElementById('mode').value,
+                fixedInterval: timeToSeconds(document.getElementById('fixedInterval').value || '00:00:00'),
+                minInterval: timeToSeconds(document.getElementById('minInterval').value || '00:00:00'),
+                maxInterval: timeToSeconds(document.getElementById('maxInterval').value || '00:00:00'),
+                webhookTimeout: parseInt(document.getElementById('webhookTimeout').value),
+                active: true
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/timers/${id}` : '/api/timers';
+
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => {
+                toggleModal();
+            });
+        };
+
+        function toggleModal() {
+            const modal = document.getElementById('timer-modal');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            document.body.classList.toggle('modal-active');
+        }
+
+        function toggleLogsModal() {
+            const modal = document.getElementById('logs-modal');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            document.body.classList.toggle('modal-active');
+        }
+
+        document.querySelectorAll('.modal-close').forEach(el => {
+            el.onclick = (e) => {
+                if (e.target.closest('#logs-modal')) toggleLogsModal();
+                else toggleModal();
+            };
+        });
+
+        connectWS();
+    </script>
+</body>
+</html>

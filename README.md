@@ -1,2 +1,30 @@
-# webhooktimer
-Minimalistic Timer for Webhooks (designed for N8N Webhooks)
+# Webhook Timer
+
+A minimalistic timer for webhooks, designed specifically for N8N Webhooks.
+
+## Features
+- Minimalistic Go-based daemon
+- SQLite persistence for configuration
+- Web-UI for managing timers
+- Support for Fixed and Random intervals
+- WebSocket for live countdown updates
+- Multi-stage Docker image (~25MB)
+
+## Deployment
+
+### Docker Compose
+```yaml
+services:
+  timerhook:
+    image: timerhook:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+```
+
+## Local Development
+1. Install Go 1.23+
+2. `go run main.go`
+3. Access UI at `http://localhost:8080`
