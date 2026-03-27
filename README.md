@@ -21,7 +21,7 @@ A minimalistic timer for webhooks, designed specifically for N8N Webhooks.
 ```yaml
 services:
   timerhook:
-    image: ghcr.io/xhyperdevx/timerhook:latest
+    image: ghcr.io/xhyperdevx/webhooktimer:latest
     ports:
       - "8080:8080"
     volumes:
