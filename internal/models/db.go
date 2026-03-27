@@ -26,7 +26,8 @@ func InitDB(dataSourceName string) error {
             active BOOLEAN DEFAULT TRUE,
             last_execution DATETIME,
             webhook_timeout INTEGER DEFAULT 5,
-            method TEXT DEFAULT 'POST'
+            method TEXT DEFAULT 'POST',
+            type TEXT DEFAULT 'other'
         );
         CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

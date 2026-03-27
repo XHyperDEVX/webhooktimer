@@ -4,6 +4,7 @@ import (
     "context"
     "crypto/rand"
     "database/sql"
+    "encoding/json"
     "fmt"
     "log"
     "math/big"
@@ -30,7 +31,7 @@ func NewManager(db *sql.DB) *Manager {
 }
 
 func (m *Manager) StartAll() error {
-    rows, err := m.db.Query("SELECT id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, last_execution, webhook_timeout, method FROM timers")
+    rows, err := m.db.Query("SELECT id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, last_execution, webhook_timeout, method, type FROM timers")
     if err != nil {
         return err
     }
@@ -39,7 +40,7 @@ func (m *Manager) StartAll() error {
     for rows.Next() {
         var t models.TimerEntry
         var lastExec sql.NullTime
-        err := rows.Scan(&t.ID, &t.Name, &t.WebhookURL, &t.Mode, &t.FixedInterval, &t.MinInterval, &t.MaxInterval, &t.Active, &lastExec, &t.WebhookTimeout, &t.Method)
+        err := rows.Scan(&t.ID, &t.Name, &t.WebhookURL, &t.Mode, &t.FixedInterval, &t.MinInterval, &t.MaxInterval, &t.Active, &lastExec, &t.WebhookTimeout, &t.Method, &t.Type)
         if err != nil {
             return err
         }
@@ -80,6 +81,9 @@ func (m *Manager) StopTimer(id string) {
         t.NextExecution = time.Time{}
     }
     m.mu.Unlock()
+    if m.OnUpdate != nil {
+        m.OnUpdate(id)
+    }
 }
 
 func (m *Manager) UpdateTimer(t *models.TimerEntry) {
@@ -155,46 +159,79 @@ func (m *Manager) calculateInterval(t *models.TimerEntry) time.Duration {
     return time.Duration(min+n.Int64()) * time.Second
 }
 
-func (m *Manager) executeWebhook(t *models.TimerEntry) {
-    client := &http.Client{
-        Timeout: time.Duration(t.WebhookTimeout) * time.Second,
+func (m *Manager) CallNow(id string) {
+    m.mu.RLock()
+    t, ok := m.timers[id]
+    m.mu.RUnlock()
+    if !ok {
+        return
     }
-    
+
+    go func() {
+        m.executeWebhook(t)
+        if m.OnUpdate != nil {
+            m.OnUpdate(id)
+        }
+    }()
+}
+
+func (m *Manager) executeWebhook(t *models.TimerEntry) {
+    timeout := time.Duration(t.WebhookTimeout) * time.Second
+    if t.Type == "n8n" && timeout < 30*time.Second {
+        timeout = 30 * time.Second
+    }
+
+    client := &http.Client{
+        Timeout: timeout,
+    }
+
     method := t.Method
     if method == "" {
         method = "POST"
     }
-    
+
     req, err := http.NewRequest(method, t.WebhookURL, nil)
     if err != nil {
         log.Printf("Error creating request: %v", err)
         return
     }
-    
+
     resp, err := client.Do(req)
     status := "success"
     message := ""
+
     if err != nil {
         status = "error"
         message = err.Error()
     } else {
-        if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+        defer resp.Body.Close()
+        if resp.StatusCode != http.StatusOK {
             status = "error"
             message = fmt.Sprintf("HTTP Status %d", resp.StatusCode)
+        } else if t.Type == "n8n" {
+            var body struct {
+                Message string `json:"message"`
+            }
+            if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+                status = "error"
+                message = "Invalid JSON response"
+            } else if body.Message != "Workflow was started" {
+                status = "error"
+                message = fmt.Sprintf("Unexpected message: %s", body.Message)
+            }
         }
-        resp.Body.Close()
     }
 
     t.LastExecution = time.Now()
-    
+
     // Update last execution in DB
     _, _ = m.db.Exec("UPDATE timers SET last_execution = ? WHERE id = ?", t.LastExecution, t.ID)
-    
+
     // Add log entry
     _, _ = m.db.Exec("INSERT INTO logs (timer_id, timestamp, status, message) VALUES (?, ?, ?, ?)", t.ID, t.LastExecution, status, message)
-    
+
     // Keep only last 3 logs
     _, _ = m.db.Exec("DELETE FROM logs WHERE timer_id = ? AND id NOT IN (SELECT id FROM logs WHERE timer_id = ? ORDER BY timestamp DESC LIMIT 3)", t.ID, t.ID)
-    
+
     log.Printf("Executed webhook for %s: %s %s", t.Name, status, message)
 }

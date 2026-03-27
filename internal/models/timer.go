@@ -8,6 +8,8 @@ type TimerEntry struct {
     ID             string    `json:"id"`
     Name           string    `json:"name"`
     WebhookURL     string    `json:"webhookURL"`
+    Method         string    `json:"method"`
+    Type           string    `json:"type"` // n8n or other
     Mode           string    `json:"mode"` // fixed or random
     FixedInterval  int       `json:"fixedInterval"`
     MinInterval    int       `json:"minInterval"`
@@ -15,7 +17,6 @@ type TimerEntry struct {
     Active         bool      `json:"active"`
     LastExecution  time.Time `json:"lastExecution"`
     WebhookTimeout int       `json:"webhookTimeout"`
-    Method         string    `json:"method"`
     NextExecution  time.Time `json:"nextExecution"` // Only in RAM
 }
 

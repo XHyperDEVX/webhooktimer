@@ -1,40 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webhook Timer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#121212',
+                            card: '#1e1e1e',
+                            border: '#333333',
+                            text: '#e0e0e0',
+                            muted: '#b0b0b0'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+        body { background-color: #121212; color: #e0e0e0; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+<body class="font-sans leading-normal tracking-normal dark">
 
-    <nav class="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
+    <nav class="bg-dark-card border-b border-dark-border fixed w-full z-30 top-0">
         <div class="px-3 py-3 lg:px-5 lg:pl-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center justify-start">
-                    <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap">Webhook Timer</span>
+                    <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap text-dark-text">Webhook Timer</span>
                 </div>
                 <div class="flex items-center">
-                    <button id="new-timer-btn" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 focus:outline-none">New Timer</button>
+                    <button id="new-timer-btn" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 focus:outline-none">New Timer</button>
                 </div>
             </div>
         </div>
     </nav>
 
     <div class="pt-20 px-4">
-        <div class="bg-white shadow-md rounded my-6 overflow-x-auto">
+        <div class="bg-dark-card shadow-md rounded my-6 overflow-x-auto border border-dark-border">
             <table class="min-w-full leading-normal">
                 <thead>
                     <tr>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Execution</th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Countdown</th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        <th class="px-5 py-3 border-b border-dark-border bg-dark-bg text-left text-xs font-semibold text-dark-muted uppercase tracking-wider">Name</th>
+                        <th class="px-5 py-3 border-b border-dark-border bg-dark-bg text-left text-xs font-semibold text-dark-muted uppercase tracking-wider">Status</th>
+                        <th class="px-5 py-3 border-b border-dark-border bg-dark-bg text-left text-xs font-semibold text-dark-muted uppercase tracking-wider">Last Execution</th>
+                        <th class="px-5 py-3 border-b border-dark-border bg-dark-bg text-left text-xs font-semibold text-dark-muted uppercase tracking-wider">Countdown</th>
+                        <th class="px-5 py-3 border-b border-dark-border bg-dark-bg text-left text-xs font-semibold text-dark-muted uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="timer-list">
@@ -46,13 +65,13 @@
 
     <!-- New/Edit Timer Modal -->
     <div id="timer-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
-        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
-        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+        <div class="modal-overlay absolute w-full h-full bg-black opacity-70"></div>
+        <div class="modal-container bg-dark-card w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto border border-dark-border">
             <div class="modal-content py-4 text-left px-6">
                 <div class="flex justify-between items-center pb-3">
-                    <p class="text-2xl font-bold" id="modal-title">New Timer</p>
+                    <p class="text-2xl font-bold text-dark-text" id="modal-title">New Timer</p>
                     <div class="modal-close cursor-pointer z-50" id="modal-close-btn">
-                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <svg class="fill-current text-dark-text" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
                             <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
                         </svg>
                     </div>
@@ -60,48 +79,56 @@
                 <form id="timer-form">
                     <input type="hidden" id="timer-id">
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Name</label>
-                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" type="text" placeholder="Timer Name" required>
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="name">Name</label>
+                        <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="name" type="text" placeholder="Timer Name" required>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="webhookURL">Webhook URL</label>
-                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="webhookURL" type="url" placeholder="https://..." required>
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="type">Webhook Type</label>
+                        <select class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="type">
+                            <option value="other">Other</option>
+                            <option value="n8n">N8N Webhook</option>
+                        </select>
+                        <p id="n8n-info" class="hidden text-xs text-blue-400 mt-1">N8N webhooks wait for {"message": "Workflow was started"}. Max timeout: 30s.</p>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="method">Method</label>
-                        <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="method">
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="webhookURL">Webhook URL</label>
+                        <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="webhookURL" type="url" placeholder="https://..." required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="method">Method</label>
+                        <select class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="method">
                             <option value="POST">POST</option>
                             <option value="GET">GET</option>
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="mode">Mode</label>
-                        <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="mode">
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="mode">Mode</label>
+                        <select class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="mode">
                             <option value="fixed">Fixed</option>
                             <option value="random">Random</option>
                         </select>
                     </div>
                     <div id="fixed-params" class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="fixedInterval">Fixed Interval (HH:MM:SS)</label>
-                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="fixedInterval" type="text" placeholder="00:00:10">
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="fixedInterval">Fixed Interval (HH:MM:SS)</label>
+                        <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="fixedInterval" type="text" placeholder="00:00:10">
                     </div>
                     <div id="random-params" class="hidden mb-4 flex gap-2">
                         <div class="w-1/2">
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="minInterval">Min (HH:MM:SS)</label>
-                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="minInterval" type="text" placeholder="00:00:05">
+                            <label class="block text-dark-muted text-sm font-bold mb-2" for="minInterval">Min (HH:MM:SS)</label>
+                            <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="minInterval" type="text" placeholder="00:00:05">
                         </div>
                         <div class="w-1/2">
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="maxInterval">Max (HH:MM:SS)</label>
-                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="maxInterval" type="text" placeholder="00:00:15">
+                            <label class="block text-dark-muted text-sm font-bold mb-2" for="maxInterval">Max (HH:MM:SS)</label>
+                            <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="maxInterval" type="text" placeholder="00:00:15">
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="webhookTimeout">Webhook Timeout (sec)</label>
-                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="webhookTimeout" type="number" value="5" min="1" max="60">
+                        <label class="block text-dark-muted text-sm font-bold mb-2" for="webhookTimeout">Webhook Timeout (sec)</label>
+                        <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="webhookTimeout" type="number" value="5" min="1" max="60">
                     </div>
                     <div class="flex justify-end pt-2">
-                        <button type="button" class="px-4 bg-transparent p-3 rounded-lg text-blue-500 hover:bg-gray-100 hover:text-blue-400 mr-2 modal-close">Cancel</button>
-                        <button type="submit" class="modal-close px-4 bg-blue-500 p-3 rounded-lg text-white hover:bg-blue-400">Save</button>
+                        <button type="button" class="px-4 bg-transparent p-3 rounded-lg text-blue-500 hover:bg-dark-bg hover:text-blue-400 mr-2 modal-close">Cancel</button>
+                        <button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white hover:bg-blue-500">Save</button>
                     </div>
                 </form>
             </div>
@@ -110,13 +137,13 @@
 
     <!-- Logs Modal -->
     <div id="logs-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
-        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
-        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+        <div class="modal-overlay absolute w-full h-full bg-black opacity-70"></div>
+        <div class="modal-container bg-dark-card w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto border border-dark-border">
             <div class="modal-content py-4 text-left px-6">
                 <div class="flex justify-between items-center pb-3">
-                    <p class="text-2xl font-bold">Execution Logs</p>
+                    <p class="text-2xl font-bold text-dark-text">Execution Logs</p>
                     <div class="modal-close cursor-pointer z-50" id="logs-close-btn">
-                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <svg class="fill-current text-dark-text" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
                             <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
                         </svg>
                     </div>
@@ -125,7 +152,7 @@
                     <!-- Logs will be populated here -->
                 </div>
                 <div class="flex justify-end pt-2">
-                    <button class="modal-close px-4 bg-gray-500 p-3 rounded-lg text-white hover:bg-gray-400">Close</button>
+                    <button class="modal-close px-4 bg-gray-600 p-3 rounded-lg text-white hover:bg-gray-500">Close</button>
                 </div>
             </div>
         </div>
@@ -162,28 +189,29 @@
         function renderTimers() {
             const list = document.getElementById('timer-list');
             list.innerHTML = '';
-            timers.forEach(timer => {
+            timers.sort((a,b) => a.name.localeCompare(b.name)).forEach(timer => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <p class="text-gray-900 whitespace-no-wrap">${timer.name}</p>
+                    <td class="px-5 py-5 border-b border-dark-border bg-dark-card text-sm">
+                        <p class="text-dark-text whitespace-no-wrap">${timer.name}</p>
                     </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <td class="px-5 py-5 border-b border-dark-border bg-dark-card text-sm">
                         <label class="inline-flex relative items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer" ${timer.active ? 'checked' : ''} onchange="toggleTimer('${timer.id}', this.checked)">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <p class="text-gray-900 whitespace-no-wrap">${timer.lastExecution && timer.lastExecution !== '0001-01-01T00:00:00Z' ? new Date(timer.lastExecution).toLocaleString() : 'Never'}</p>
+                    <td class="px-5 py-5 border-b border-dark-border bg-dark-card text-sm">
+                        <p class="text-dark-text whitespace-no-wrap">${timer.lastExecution && timer.lastExecution !== '0001-01-01T00:00:00Z' ? new Date(timer.lastExecution).toLocaleString() : 'Never'}</p>
                     </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <p class="text-gray-900 whitespace-no-wrap countdown" data-next="${timer.nextExecution}">${timer.active ? 'Calculating...' : 'Stopped'}</p>
+                    <td class="px-5 py-5 border-b border-dark-border bg-dark-card text-sm">
+                        <p class="text-dark-text whitespace-no-wrap countdown" data-next="${timer.active ? timer.nextExecution : ''}">${timer.active ? 'Calculating...' : 'Stopped'}</p>
                     </td>
-                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                        <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="editTimer('${timer.id}')">Edit</button>
-                        <button class="text-green-600 hover:text-green-900 mr-2" onclick="showLogs('${timer.id}')">Logs</button>
-                        <button class="text-red-600 hover:text-red-900" onclick="deleteTimer('${timer.id}')">Delete</button>
+                    <td class="px-5 py-5 border-b border-dark-border bg-dark-card text-sm">
+                        <button class="text-blue-400 hover:text-blue-300 mr-2" onclick="editTimer('${timer.id}')">Edit</button>
+                        <button class="text-green-400 hover:text-green-300 mr-2" onclick="showLogs('${timer.id}')">Logs</button>
+                        <button class="text-yellow-400 hover:text-yellow-300 mr-2" onclick="callNow('${timer.id}')">Call Now</button>
+                        <button class="text-red-400 hover:text-red-300" onclick="deleteTimer('${timer.id}')">Delete</button>
                     </td>
                 `;
                 list.appendChild(tr);
@@ -193,7 +221,12 @@
         setInterval(() => {
             document.querySelectorAll('.countdown').forEach(el => {
                 const next = el.getAttribute('data-next');
-                if (!next || next === '0001-01-01T00:00:00Z') return;
+                if (!next || next === '0001-01-01T00:00:00Z') {
+                    if (el.innerText !== 'Stopped' && el.innerText !== 'Calculating...') {
+                         // Keep current text if it's already set to something sensible or leave it.
+                    }
+                    return;
+                }
                 const diff = new Date(next) - new Date();
                 if (diff <= 0) {
                     el.innerText = '00:00:00';
@@ -211,9 +244,16 @@
             });
         }
 
+        function callNow(id) {
+            fetch(`/api/timers/${id}/call`, { method: 'POST' });
+        }
+
         function deleteTimer(id) {
             if (confirm('Are you sure?')) {
                 fetch(`/api/timers/${id}`, { method: 'DELETE' });
+                // Optimistic UI update
+                timers = timers.filter(t => t.id !== id);
+                renderTimers();
             }
         }
 
@@ -223,6 +263,7 @@
             document.getElementById('name').value = timer.name;
             document.getElementById('webhookURL').value = timer.webhookURL;
             document.getElementById('method').value = timer.method || 'POST';
+            document.getElementById('type').value = timer.type || 'other';
             document.getElementById('mode').value = timer.mode;
             document.getElementById('fixedInterval').value = secondsToTime(timer.fixedInterval);
             document.getElementById('minInterval').value = secondsToTime(timer.minInterval);
@@ -230,6 +271,7 @@
             document.getElementById('webhookTimeout').value = timer.webhookTimeout;
             
             toggleModeParams(timer.mode);
+            toggleTypeParams(timer.type || 'other');
             document.getElementById('modal-title').innerText = 'Edit Timer';
             toggleModal();
         }
@@ -240,14 +282,14 @@
                 .then(logs => {
                     const content = document.getElementById('logs-content');
                     content.innerHTML = logs.map(log => `
-                        <div class="mb-2 p-2 border rounded ${log.status === 'success' ? 'bg-green-100 border-green-200' : 'bg-red-100 border-red-200'}">
-                            <div class="flex justify-between font-bold">
+                        <div class="mb-2 p-2 border border-dark-border rounded ${log.status === 'success' ? 'bg-green-900/30 border-green-800' : 'bg-red-900/30 border-red-800'}">
+                            <div class="flex justify-between font-bold text-dark-text">
                                 <span>${log.status.toUpperCase()}</span>
                                 <span>${new Date(log.timestamp).toLocaleString()}</span>
                             </div>
-                            <div>${log.message || ''}</div>
+                            <div class="text-dark-muted">${log.message || ''}</div>
                         </div>
-                    `).join('') || '<p>No logs yet.</p>';
+                    `).join('') || '<p class="text-dark-muted">No logs yet.</p>';
                     toggleLogsModal();
                 });
         }
@@ -257,10 +299,12 @@
             document.getElementById('timer-id').value = '';
             document.getElementById('modal-title').innerText = 'New Timer';
             toggleModeParams('fixed');
+            toggleTypeParams('other');
             toggleModal();
         };
 
         document.getElementById('mode').onchange = (e) => toggleModeParams(e.target.value);
+        document.getElementById('type').onchange = (e) => toggleTypeParams(e.target.value);
 
         function toggleModeParams(mode) {
             if (mode === 'fixed') {
@@ -272,6 +316,14 @@
             }
         }
 
+        function toggleTypeParams(type) {
+            if (type === 'n8n') {
+                document.getElementById('n8n-info').classList.remove('hidden');
+            } else {
+                document.getElementById('n8n-info').classList.add('hidden');
+            }
+        }
+
         document.getElementById('timer-form').onsubmit = (e) => {
             e.preventDefault();
             const id = document.getElementById('timer-id').value;
@@ -279,6 +331,7 @@
                 name: document.getElementById('name').value,
                 webhookURL: document.getElementById('webhookURL').value,
                 method: document.getElementById('method').value,
+                type: document.getElementById('type').value,
                 mode: document.getElementById('mode').value,
                 fixedInterval: timeToSeconds(document.getElementById('fixedInterval').value || '00:00:00'),
                 minInterval: timeToSeconds(document.getElementById('minInterval').value || '00:00:00'),
