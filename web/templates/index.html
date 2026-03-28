@@ -126,6 +126,23 @@
                         <label class="block text-dark-muted text-sm font-bold mb-2" for="webhookTimeout">Webhook Timeout (sec)</label>
                         <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="webhookTimeout" type="number" value="5" min="1" max="60">
                     </div>
+                    <div class="mb-4">
+                        <label class="inline-flex relative items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="sleepTimeEnabled">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-3 text-dark-muted text-sm font-bold">Enable Sleep Time</span>
+                        </label>
+                    </div>
+                    <div id="sleep-time-params" class="hidden mb-4 flex gap-2">
+                        <div class="w-1/2">
+                            <label class="block text-dark-muted text-sm font-bold mb-2" for="sleepTimeStart">Start (HH:MM)</label>
+                            <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="sleepTimeStart" type="time" value="23:00">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-dark-muted text-sm font-bold mb-2" for="sleepTimeEnd">End (HH:MM)</label>
+                            <input class="bg-dark-bg border border-dark-border rounded w-full py-2 px-3 text-dark-text leading-tight focus:outline-none focus:border-blue-500" id="sleepTimeEnd" type="time" value="06:00">
+                        </div>
+                    </div>
                     <div class="flex justify-end pt-2">
                         <button type="button" class="px-4 bg-transparent p-3 rounded-lg text-blue-500 hover:bg-dark-bg hover:text-blue-400 mr-2 modal-close">Cancel</button>
                         <button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white hover:bg-blue-500">Save</button>
@@ -270,6 +287,17 @@
             document.getElementById('maxInterval').value = secondsToTime(timer.maxInterval);
             document.getElementById('webhookTimeout').value = timer.webhookTimeout;
             
+            // Sleep time
+            const sleepEnabled = timer.sleepTimeStart && timer.sleepTimeEnd;
+            document.getElementById('sleepTimeEnabled').checked = sleepEnabled;
+            if (sleepEnabled) {
+                document.getElementById('sleep-time-params').classList.remove('hidden');
+                document.getElementById('sleepTimeStart').value = timer.sleepTimeStart;
+                document.getElementById('sleepTimeEnd').value = timer.sleepTimeEnd;
+            } else {
+                document.getElementById('sleep-time-params').classList.add('hidden');
+            }
+            
             toggleModeParams(timer.mode);
             toggleTypeParams(timer.type || 'other');
             document.getElementById('modal-title').innerText = 'Edit Timer';
@@ -300,11 +328,20 @@
             document.getElementById('modal-title').innerText = 'New Timer';
             toggleModeParams('fixed');
             toggleTypeParams('other');
+            document.getElementById('sleepTimeEnabled').checked = false;
+            document.getElementById('sleep-time-params').classList.add('hidden');
             toggleModal();
         };
 
         document.getElementById('mode').onchange = (e) => toggleModeParams(e.target.value);
         document.getElementById('type').onchange = (e) => toggleTypeParams(e.target.value);
+        document.getElementById('sleepTimeEnabled').onchange = (e) => {
+            if (e.target.checked) {
+                document.getElementById('sleep-time-params').classList.remove('hidden');
+            } else {
+                document.getElementById('sleep-time-params').classList.add('hidden');
+            }
+        };
 
         function toggleModeParams(mode) {
             if (mode === 'fixed') {
@@ -327,6 +364,7 @@
         document.getElementById('timer-form').onsubmit = (e) => {
             e.preventDefault();
             const id = document.getElementById('timer-id').value;
+            const sleepTimeEnabled = document.getElementById('sleepTimeEnabled').checked;
             const data = {
                 name: document.getElementById('name').value,
                 webhookURL: document.getElementById('webhookURL').value,
@@ -337,7 +375,9 @@
                 minInterval: timeToSeconds(document.getElementById('minInterval').value || '00:00:00'),
                 maxInterval: timeToSeconds(document.getElementById('maxInterval').value || '00:00:00'),
                 webhookTimeout: parseInt(document.getElementById('webhookTimeout').value),
-                active: true
+                active: true,
+                sleepTimeStart: sleepTimeEnabled ? document.getElementById('sleepTimeStart').value : '',
+                sleepTimeEnd: sleepTimeEnabled ? document.getElementById('sleepTimeEnd').value : ''
             };
 
             const method = id ? 'PUT' : 'POST';
