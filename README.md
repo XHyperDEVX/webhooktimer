@@ -8,7 +8,7 @@ A minimalistic timer for webhooks, designed specifically for N8N Webhooks.
 - Web-UI for managing timers
 - Support for Fixed and Random intervals
 - WebSocket for live countdown updates
-- Multi-stage Docker image (~25MB)
+- Ultra-lightweight Docker Image (~26MB)
 
 ## ⚠️ AI GENERATED PROJECT ⚠️
 
