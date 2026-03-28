@@ -18,6 +18,8 @@ type TimerEntry struct {
     LastExecution  time.Time `json:"lastExecution"`
     WebhookTimeout int       `json:"webhookTimeout"`
     NextExecution  time.Time `json:"nextExecution"` // Only in RAM
+    SleepTimeStart string    `json:"sleepTimeStart"` // HH:MM format, 24-hour
+    SleepTimeEnd   string    `json:"sleepTimeEnd"`   // HH:MM format, 24-hour
 }
 
 type LogEntry struct {

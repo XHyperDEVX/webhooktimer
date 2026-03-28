@@ -31,7 +31,7 @@ func NewManager(db *sql.DB) *Manager {
 }
 
 func (m *Manager) StartAll() error {
-    rows, err := m.db.Query("SELECT id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, last_execution, webhook_timeout, method, type FROM timers")
+    rows, err := m.db.Query("SELECT id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, last_execution, webhook_timeout, method, type, sleep_time_start, sleep_time_end FROM timers")
     if err != nil {
         return err
     }
@@ -40,7 +40,7 @@ func (m *Manager) StartAll() error {
     for rows.Next() {
         var t models.TimerEntry
         var lastExec sql.NullTime
-        err := rows.Scan(&t.ID, &t.Name, &t.WebhookURL, &t.Mode, &t.FixedInterval, &t.MinInterval, &t.MaxInterval, &t.Active, &lastExec, &t.WebhookTimeout, &t.Method, &t.Type)
+        err := rows.Scan(&t.ID, &t.Name, &t.WebhookURL, &t.Mode, &t.FixedInterval, &t.MinInterval, &t.MaxInterval, &t.Active, &lastExec, &t.WebhookTimeout, &t.Method, &t.Type, &t.SleepTimeStart, &t.SleepTimeEnd)
         if err != nil {
             return err
         }
@@ -135,6 +135,10 @@ func (m *Manager) runTimer(ctx context.Context, id string) {
         case <-ctx.Done():
             return
         case <-time.After(interval):
+            if m.isSleepTime(t) {
+                log.Printf("Skipping webhook for %s: within sleep time window", t.Name)
+                continue
+            }
             m.executeWebhook(t)
             if m.OnUpdate != nil {
                 m.OnUpdate(id)
@@ -157,6 +161,48 @@ func (m *Manager) calculateInterval(t *models.TimerEntry) time.Duration {
     diff := max - min
     n, _ := rand.Int(rand.Reader, big.NewInt(diff+1))
     return time.Duration(min+n.Int64()) * time.Second
+}
+
+func (m *Manager) isSleepTime(t *models.TimerEntry) bool {
+    if t.SleepTimeStart == "" || t.SleepTimeEnd == "" {
+        return false
+    }
+
+    loc, err := time.LoadLocation("Europe/Berlin")
+    if err != nil {
+        loc = time.Local
+    }
+    now := time.Now().In(loc)
+
+    startH, startM, err := parseTime(t.SleepTimeStart)
+    if err != nil {
+        return false
+    }
+    endH, endM, err := parseTime(t.SleepTimeEnd)
+    if err != nil {
+        return false
+    }
+
+    currentMinutes := now.Hour()*60 + now.Minute()
+    startMinutes := startH*60 + startM
+    endMinutes := endH*60 + endM
+
+    // Handle sleep time that spans midnight (e.g., 23:00-06:00)
+    if startMinutes <= endMinutes {
+        // Normal case: 00:00-12:00
+        return currentMinutes >= startMinutes && currentMinutes < endMinutes
+    }
+    // Spans midnight: 23:00-06:00
+    return currentMinutes >= startMinutes || currentMinutes < endMinutes
+}
+
+func parseTime(hhmm string) (int, int, error) {
+    var h, m int
+    _, err := fmt.Sscanf(hhmm, "%d:%d", &h, &m)
+    if err != nil {
+        return 0, 0, err
+    }
+    return h, m, nil
 }
 
 func (m *Manager) CallNow(id string) {

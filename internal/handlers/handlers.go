@@ -67,8 +67,8 @@ func (h *Handler) CreateTimer(w http.ResponseWriter, r *http.Request) {
         t.Type = "other"
     }
 
-    _, err := models.DB.Exec("INSERT INTO timers (id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, webhook_timeout, method, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        t.ID, t.Name, t.WebhookURL, t.Mode, t.FixedInterval, t.MinInterval, t.MaxInterval, t.Active, t.WebhookTimeout, t.Method, t.Type)
+    _, err := models.DB.Exec("INSERT INTO timers (id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, webhook_timeout, method, type, sleep_time_start, sleep_time_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        t.ID, t.Name, t.WebhookURL, t.Mode, t.FixedInterval, t.MinInterval, t.MaxInterval, t.Active, t.WebhookTimeout, t.Method, t.Type, t.SleepTimeStart, t.SleepTimeEnd)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -88,8 +88,8 @@ func (h *Handler) UpdateTimer(w http.ResponseWriter, r *http.Request) {
     }
     t.ID = id
 
-    _, err := models.DB.Exec("UPDATE timers SET name = ?, webhook_url = ?, mode = ?, fixed_interval = ?, min_interval = ?, max_interval = ?, active = ?, webhook_timeout = ?, method = ?, type = ? WHERE id = ?",
-        t.Name, t.WebhookURL, t.Mode, t.FixedInterval, t.MinInterval, t.MaxInterval, t.Active, t.WebhookTimeout, t.Method, t.Type, id)
+    _, err := models.DB.Exec("UPDATE timers SET name = ?, webhook_url = ?, mode = ?, fixed_interval = ?, min_interval = ?, max_interval = ?, active = ?, webhook_timeout = ?, method = ?, type = ?, sleep_time_start = ?, sleep_time_end = ? WHERE id = ?",
+        t.Name, t.WebhookURL, t.Mode, t.FixedInterval, t.MinInterval, t.MaxInterval, t.Active, t.WebhookTimeout, t.Method, t.Type, t.SleepTimeStart, t.SleepTimeEnd, id)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -135,8 +135,8 @@ func (h *Handler) ToggleTimer(w http.ResponseWriter, r *http.Request) {
 
     // Fetch updated timer
     var t models.TimerEntry
-    row := models.DB.QueryRow("SELECT id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, last_execution, webhook_timeout, method, type FROM timers WHERE id = ?", id)
-    err = row.Scan(&t.ID, &t.Name, &t.WebhookURL, &t.Mode, &t.FixedInterval, &t.MinInterval, &t.MaxInterval, &t.Active, &t.LastExecution, &t.WebhookTimeout, &t.Method, &t.Type)
+    row := models.DB.QueryRow("SELECT id, name, webhook_url, mode, fixed_interval, min_interval, max_interval, active, last_execution, webhook_timeout, method, type, sleep_time_start, sleep_time_end FROM timers WHERE id = ?", id)
+    err = row.Scan(&t.ID, &t.Name, &t.WebhookURL, &t.Mode, &t.FixedInterval, &t.MinInterval, &t.MaxInterval, &t.Active, &t.LastExecution, &t.WebhookTimeout, &t.Method, &t.Type, &t.SleepTimeStart, &t.SleepTimeEnd)
     if err == nil {
         h.Manager.UpdateTimer(&t)
     }

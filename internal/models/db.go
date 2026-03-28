@@ -27,7 +27,9 @@ func InitDB(dataSourceName string) error {
             last_execution DATETIME,
             webhook_timeout INTEGER DEFAULT 5,
             method TEXT DEFAULT 'POST',
-            type TEXT DEFAULT 'other'
+            type TEXT DEFAULT 'other',
+            sleep_time_start TEXT,
+            sleep_time_end TEXT
         );
         CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
