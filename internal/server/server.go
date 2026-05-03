@@ -102,10 +102,17 @@ func (s *Server) handleTime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
+	timezoneName, timezoneOffsetSeconds := now.Zone()
+	if timezoneName == "" {
+		timezoneName = now.Location().String()
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"unixMs":   now.UnixMilli(),
-		"time":     now.Format("15:04:05"),
-		"timezone": now.Location().String(),
+		"unixMs":                now.UnixMilli(),
+		"time":                  now.Format("15:04:05"),
+		"timezone":              timezoneName,
+		"timezoneLocation":      now.Location().String(),
+		"timezoneOffsetSeconds": timezoneOffsetSeconds,
 	})
 }
 

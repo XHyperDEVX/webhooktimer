@@ -32,12 +32,16 @@ func main() {
 
 	port := envOrDefault("PORT", "8080")
 	statePath := envOrDefault("STATE_PATH", "/data/state.json")
-	timezoneName := envOrDefault("TZ", "UTC")
 
-	location, err := time.LoadLocation(timezoneName)
-	if err != nil {
-		log.Printf("invalid TZ %q, using UTC", timezoneName)
-		location = time.UTC
+	location := time.Local
+	timezoneName := strings.TrimSpace(os.Getenv("TZ"))
+	if timezoneName != "" {
+		loadedLocation, err := time.LoadLocation(timezoneName)
+		if err != nil {
+			log.Printf("invalid TZ %q, using system local timezone (%s)", timezoneName, location.String())
+		} else {
+			location = loadedLocation
+		}
 	}
 	time.Local = location
 

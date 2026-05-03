@@ -326,6 +326,7 @@
 
           <div class="row">
             <label>Sleep window (do not execute)</label>
+            <div class="tiny" id="sleep-timezone">Times use server timezone (UTC).</div>
             <div class="inline" style="justify-content:flex-start; gap:8px;">
               <label class="switch">
                 <input id="sleepEnabled" type="checkbox" />
@@ -407,7 +408,9 @@
       loadingEntries: false,
       loadingSettings: false,
       serverOffsetMs: 0,
-      timezone: 'local',
+      timezone: 'UTC',
+      timezoneLocation: 'UTC',
+      timezoneOffsetMs: 0,
       openLogs: new Set(),
     };
 
@@ -417,6 +420,7 @@
     const randomWrap = document.getElementById('random-wrap');
     const sleepEnabled = document.getElementById('sleepEnabled');
     const sleepWrap = document.getElementById('sleep-wrap');
+    const sleepTimezone = document.getElementById('sleep-timezone');
     const discordWebhookURLInput = document.getElementById('discordWebhookURL');
     const discordSaveBtn = document.getElementById('discord-save-btn');
     const discordTestBtn = document.getElementById('discord-test-btn');
@@ -598,6 +602,7 @@
         if (!response.ok) {
           return;
         }
+
         const data = await response.json();
         if (typeof data.unixMs === 'number') {
           state.serverOffsetMs = data.unixMs - Date.now();
@@ -605,6 +610,14 @@
         if (typeof data.timezone === 'string' && data.timezone) {
           state.timezone = data.timezone;
         }
+        if (typeof data.timezoneLocation === 'string' && data.timezoneLocation) {
+          state.timezoneLocation = data.timezoneLocation;
+        }
+        if (typeof data.timezoneOffsetSeconds === 'number' && Number.isFinite(data.timezoneOffsetSeconds)) {
+          state.timezoneOffsetMs = data.timezoneOffsetSeconds * 1000;
+        }
+
+        sleepTimezone.textContent = `Times use server timezone (${state.timezone}).`;
       } catch (_) {
       }
     }
@@ -859,15 +872,33 @@
       }, 2400);
     }
 
+    function serverNowMs() {
+      return Date.now() + state.serverOffsetMs;
+    }
+
+    function serverClockDate(epochMs) {
+      return new Date(epochMs + state.timezoneOffsetMs);
+    }
+
+    function padTime(value) {
+      return String(value).padStart(2, '0');
+    }
+
     function formatDate(value) {
-      return new Date(value).toLocaleString();
+      const epochMs = new Date(value).getTime();
+      if (!Number.isFinite(epochMs)) {
+        return 'invalid date';
+      }
+
+      const date = serverClockDate(epochMs);
+      return `${date.getUTCFullYear()}-${padTime(date.getUTCMonth() + 1)}-${padTime(date.getUTCDate())} ${padTime(date.getUTCHours())}:${padTime(date.getUTCMinutes())}:${padTime(date.getUTCSeconds())} (${state.timezone})`;
     }
 
     function countdownText(nextISO, active) {
       if (!active) return 'disabled';
       if (!nextISO) return 'waiting...';
 
-      const diffMs = new Date(nextISO).getTime() - (Date.now() + state.serverOffsetMs);
+      const diffMs = new Date(nextISO).getTime() - serverNowMs();
       if (diffMs <= 0) return '00:00:00';
       return toClock(Math.ceil(diffMs / 1000));
     }
@@ -903,11 +934,11 @@
 
     function updateClock() {
       const clock = document.getElementById('system-time');
-      const now = new Date(Date.now() + state.serverOffsetMs);
+      const now = serverClockDate(serverNowMs());
       const time = [
-        String(now.getHours()).padStart(2, '0'),
-        String(now.getMinutes()).padStart(2, '0'),
-        String(now.getSeconds()).padStart(2, '0'),
+        padTime(now.getUTCHours()),
+        padTime(now.getUTCMinutes()),
+        padTime(now.getUTCSeconds()),
       ].join(':');
       clock.textContent = `${time} (${state.timezone})`;
     }

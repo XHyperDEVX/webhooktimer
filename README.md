@@ -31,8 +31,9 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - TZ=UTC
       - STATE_PATH=/data/state.json
+      # Optional: set a specific timezone, otherwise container local time is used
+      # - TZ=Europe/Berlin
     healthcheck:
       test: ["CMD", "/webhooktimer", "healthcheck"]
       interval: 30s
