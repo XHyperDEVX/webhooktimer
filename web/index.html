@@ -49,8 +49,14 @@
     .layout {
       display: grid;
       gap: 16px;
-      grid-template-columns: 340px 1fr;
+      grid-template-columns: minmax(420px, 520px) minmax(0, 1fr);
       align-items: start;
+    }
+
+    .sidebar {
+      display: grid;
+      gap: 16px;
+      align-content: start;
     }
 
     .card {
@@ -92,7 +98,7 @@
 
     .duration-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(78px, 1fr));
       gap: 8px;
     }
 
@@ -134,6 +140,22 @@
     summary { cursor: pointer; color: var(--subtle); }
 
     .tiny { font-size: 11px; color: var(--subtle); }
+
+    .field-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .field-actions input {
+      flex: 1 1 auto;
+    }
+
+    .small-btn {
+      width: auto;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
 
     .switch {
       position: relative;
@@ -204,135 +226,156 @@
   </div>
 
   <div class="layout">
-    <section class="card">
-      <h2 id="form-title">Create entry</h2>
-      <form id="entry-form">
-        <input type="hidden" id="entry-id" />
+    <div class="sidebar">
+      <section class="card">
+        <h2 id="form-title">Create entry</h2>
+        <form id="entry-form">
+          <input type="hidden" id="entry-id" />
 
-        <div class="row">
-          <label for="name">Name</label>
-          <input id="name" required maxlength="80" placeholder="Daily import" />
-        </div>
+          <div class="row">
+            <label for="name">Name</label>
+            <input id="name" required maxlength="80" placeholder="Daily import" />
+          </div>
 
-        <div class="row">
-          <label for="webhookURL">Webhook URL</label>
-          <input id="webhookURL" type="url" required placeholder="https://..." />
-        </div>
+          <div class="row">
+            <label for="webhookURL">Webhook URL</label>
+            <input id="webhookURL" type="url" required placeholder="https://..." />
+          </div>
 
-        <div class="inline row">
-          <div>
-            <label for="method">Method</label>
-            <select id="method">
-              <option>POST</option>
-              <option>GET</option>
-              <option>PUT</option>
-              <option>PATCH</option>
-              <option>DELETE</option>
+          <div class="inline row">
+            <div>
+              <label for="method">Method</label>
+              <select id="method">
+                <option>POST</option>
+                <option>GET</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+              </select>
+            </div>
+            <div>
+              <label for="timeoutSeconds">Timeout (sec)</label>
+              <input id="timeoutSeconds" type="number" min="1" max="600" value="10" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="mode">Interval mode</label>
+            <select id="mode">
+              <option value="fixed">Fixed</option>
+              <option value="random">Random</option>
             </select>
           </div>
-          <div>
-            <label for="timeoutSeconds">Timeout (sec)</label>
-            <input id="timeoutSeconds" type="number" min="1" max="600" value="10" required />
-          </div>
-        </div>
 
-        <div class="row">
-          <label for="mode">Interval mode</label>
-          <select id="mode">
-            <option value="fixed">Fixed</option>
-            <option value="random">Random</option>
-          </select>
-        </div>
-
-        <div id="fixed-wrap" class="row">
-          <label>Fixed interval</label>
-          <div class="duration-grid">
-            <div>
-              <input id="fixedHours" type="number" min="0" value="0" />
-              <div class="tiny">hours</div>
-            </div>
-            <div>
-              <input id="fixedMinutes" type="number" min="0" max="59" value="1" />
-              <div class="tiny">minutes</div>
-            </div>
-            <div>
-              <input id="fixedSeconds" type="number" min="0" max="59" value="0" />
-              <div class="tiny">seconds</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="random-wrap" class="row" style="display:none;">
-          <div class="split">
-            <div>
-              <label>Random min</label>
-              <div class="duration-grid">
-                <div>
-                  <input id="randomMinHours" type="number" min="0" value="0" />
-                  <div class="tiny">hours</div>
-                </div>
-                <div>
-                  <input id="randomMinMinutes" type="number" min="0" max="59" value="0" />
-                  <div class="tiny">minutes</div>
-                </div>
-                <div>
-                  <input id="randomMinSeconds" type="number" min="0" max="59" value="30" />
-                  <div class="tiny">seconds</div>
-                </div>
+          <div id="fixed-wrap" class="row">
+            <label>Fixed interval</label>
+            <div class="duration-grid">
+              <div>
+                <input id="fixedHours" type="number" min="0" value="0" />
+                <div class="tiny">hours</div>
+              </div>
+              <div>
+                <input id="fixedMinutes" type="number" min="0" max="59" value="1" />
+                <div class="tiny">minutes</div>
+              </div>
+              <div>
+                <input id="fixedSeconds" type="number" min="0" max="59" value="0" />
+                <div class="tiny">seconds</div>
               </div>
             </div>
-            <div>
-              <label>Random max</label>
-              <div class="duration-grid">
-                <div>
-                  <input id="randomMaxHours" type="number" min="0" value="0" />
-                  <div class="tiny">hours</div>
+          </div>
+
+          <div id="random-wrap" class="row" style="display:none;">
+            <div class="split">
+              <div>
+                <label>Random min</label>
+                <div class="duration-grid">
+                  <div>
+                    <input id="randomMinHours" type="number" min="0" value="0" />
+                    <div class="tiny">hours</div>
+                  </div>
+                  <div>
+                    <input id="randomMinMinutes" type="number" min="0" max="59" value="0" />
+                    <div class="tiny">minutes</div>
+                  </div>
+                  <div>
+                    <input id="randomMinSeconds" type="number" min="0" max="59" value="30" />
+                    <div class="tiny">seconds</div>
+                  </div>
                 </div>
-                <div>
-                  <input id="randomMaxMinutes" type="number" min="0" max="59" value="2" />
-                  <div class="tiny">minutes</div>
-                </div>
-                <div>
-                  <input id="randomMaxSeconds" type="number" min="0" max="59" value="0" />
-                  <div class="tiny">seconds</div>
+              </div>
+              <div>
+                <label>Random max</label>
+                <div class="duration-grid">
+                  <div>
+                    <input id="randomMaxHours" type="number" min="0" value="0" />
+                    <div class="tiny">hours</div>
+                  </div>
+                  <div>
+                    <input id="randomMaxMinutes" type="number" min="0" max="59" value="2" />
+                    <div class="tiny">minutes</div>
+                  </div>
+                  <div>
+                    <input id="randomMaxSeconds" type="number" min="0" max="59" value="0" />
+                    <div class="tiny">seconds</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="row">
-          <label class="inline" style="justify-content:flex-start; gap:8px;">
-            <input id="sleepEnabled" type="checkbox" style="width:auto; flex:0;" />
-            <span>Sleep window (do not execute)</span>
-          </label>
-        </div>
-
-        <div id="sleep-wrap" class="inline row" style="display:none;">
-          <div>
-            <label for="sleepStart">Sleep start</label>
-            <input id="sleepStart" type="time" value="23:00" />
+          <div class="row">
+            <label>Sleep window (do not execute)</label>
+            <div class="inline" style="justify-content:flex-start; gap:8px;">
+              <label class="switch">
+                <input id="sleepEnabled" type="checkbox" />
+                <span class="switch-slider"></span>
+              </label>
+              <span class="tiny">Enable sleep window</span>
+            </div>
           </div>
-          <div>
-            <label for="sleepEnd">Sleep end</label>
-            <input id="sleepEnd" type="time" value="06:00" />
+
+          <div id="sleep-wrap" class="inline row" style="display:none;">
+            <div>
+              <label for="sleepStart">Sleep start</label>
+              <input id="sleepStart" type="time" value="23:00" />
+            </div>
+            <div>
+              <label for="sleepEnd">Sleep end</label>
+              <input id="sleepEnd" type="time" value="06:00" />
+            </div>
           </div>
-        </div>
 
+          <div class="row">
+            <label>State</label>
+            <label class="switch">
+              <input id="active" type="checkbox" checked />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+
+          <div class="inline">
+            <button class="primary" type="submit">Save</button>
+            <button id="reset-btn" type="button">Reset</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Discord notifications</h2>
         <div class="row">
-          <label>State</label>
-          <label class="switch">
-            <input id="active" type="checkbox" checked />
-            <span class="switch-slider"></span>
-          </label>
+          <label for="discordWebhookURL">Discord webhook URL (optional)</label>
+          <div class="field-actions">
+            <input id="discordWebhookURL" type="url" placeholder="https://discord.com/api/webhooks/..." />
+            <button id="discord-test-btn" class="small-btn" type="button" style="display:none;">Test</button>
+          </div>
+          <div class="tiny">If set, failed webhook executions will send a Discord embed notification.</div>
         </div>
-
         <div class="inline">
-          <button class="primary" type="submit">Save</button>
-          <button id="reset-btn" type="button">Reset</button>
+          <button id="discord-save-btn" class="primary" type="button">Save notifications</button>
         </div>
-      </form>
-    </section>
+      </section>
+    </div>
 
     <section class="card">
       <div id="toast" class="toast"></div>
@@ -362,8 +405,10 @@
       clockTimer: null,
       timeSyncTimer: null,
       loadingEntries: false,
+      loadingSettings: false,
       serverOffsetMs: 0,
       timezone: 'local',
+      openLogs: new Set(),
     };
 
     const form = document.getElementById('entry-form');
@@ -372,6 +417,9 @@
     const randomWrap = document.getElementById('random-wrap');
     const sleepEnabled = document.getElementById('sleepEnabled');
     const sleepWrap = document.getElementById('sleep-wrap');
+    const discordWebhookURLInput = document.getElementById('discordWebhookURL');
+    const discordSaveBtn = document.getElementById('discord-save-btn');
+    const discordTestBtn = document.getElementById('discord-test-btn');
 
     mode.addEventListener('change', () => {
       const isFixed = mode.value === 'fixed';
@@ -384,6 +432,9 @@
     });
 
     document.getElementById('reset-btn').addEventListener('click', resetForm);
+    discordSaveBtn.addEventListener('click', saveDiscordSettings);
+    discordTestBtn.addEventListener('click', sendDiscordTest);
+    discordWebhookURLInput.addEventListener('input', updateDiscordTestVisibility);
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -445,6 +496,78 @@
       document.getElementById(`${prefix}Seconds`).value = String(seconds);
     }
 
+    function updateDiscordTestVisibility() {
+      discordTestBtn.style.display = discordWebhookURLInput.value.trim() ? 'inline-flex' : 'none';
+    }
+
+    async function loadSettings() {
+      if (state.loadingSettings) {
+        return;
+      }
+
+      state.loadingSettings = true;
+      try {
+        const response = await fetch('/api/settings');
+        if (!response.ok) {
+          throw new Error('Could not load settings');
+        }
+        const data = await response.json();
+        discordWebhookURLInput.value = String(data.discordWebhookURL || '');
+        updateDiscordTestVisibility();
+      } catch (error) {
+        showToast(error.message, false);
+      } finally {
+        state.loadingSettings = false;
+      }
+    }
+
+    async function saveDiscordSettings() {
+      const discordWebhookURL = discordWebhookURLInput.value.trim();
+
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ discordWebhookURL }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Could not save settings');
+        }
+
+        discordWebhookURLInput.value = String(data.discordWebhookURL || '');
+        updateDiscordTestVisibility();
+        showToast('Discord notification settings saved', true);
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    }
+
+    async function sendDiscordTest() {
+      const discordWebhookURL = discordWebhookURLInput.value.trim();
+      if (!discordWebhookURL) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/settings/discord/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ discordWebhookURL }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Test notification failed');
+        }
+
+        showToast('Discord test notification sent', true);
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    }
+
     async function loadEntries() {
       if (state.loadingEntries || document.visibilityState !== 'visible') {
         return;
@@ -487,6 +610,11 @@
     }
 
     function renderEntries() {
+      const openLogs = new Set(
+        [...document.querySelectorAll('details[data-entry-id][open]')].map((node) => node.dataset.entryId)
+      );
+      state.openLogs = openLogs;
+
       const tbody = document.getElementById('entries');
       tbody.innerHTML = '';
 
@@ -560,6 +688,18 @@
         actionsTd.appendChild(actions);
 
         const logs = document.createElement('details');
+        logs.dataset.entryId = entry.id;
+        if (state.openLogs.has(entry.id)) {
+          logs.open = true;
+        }
+        logs.addEventListener('toggle', () => {
+          if (logs.open) {
+            state.openLogs.add(entry.id);
+          } else {
+            state.openLogs.delete(entry.id);
+          }
+        });
+
         const summary = document.createElement('summary');
         summary.textContent = `Logs (${entry.logs ? entry.logs.length : 0}/15)`;
         logs.appendChild(summary);
@@ -778,6 +918,7 @@
       }
 
       loadEntries();
+      loadSettings();
       syncSystemTime();
       updateClock();
       updateCountdowns();

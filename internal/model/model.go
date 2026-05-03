@@ -39,6 +39,10 @@ type LogEntry struct {
 	Message    string    `json:"message"`
 }
 
+type Settings struct {
+	DiscordWebhookURL string `json:"discordWebhookURL"`
+}
+
 type ExecuteResult struct {
 	Timestamp  time.Time
 	Trigger    string

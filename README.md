@@ -8,7 +8,8 @@ A minimalistic timer for webhooks, designed specifically for N8N Webhooks.
 - Fixed and Random interval modes
 - Duration inputs for hours, minutes, and seconds (Fixed + Random min/max)
 - Per-entry enable/disable state toggle
-- Sleep window support with skip logging when a trigger happens during sleep mode
+- Sleep window support with robust scheduling guardrails to prevent in-window executions
+- Optional Discord webhook notifications for failed executions (with test button in UI)
 - Live UI refresh/countdown updates every 0.5 seconds while the UI tab is visible
 - Per-entry execution history (last 15 messages)
 - Built-in health endpoints (`/healthz`) and container health check command
