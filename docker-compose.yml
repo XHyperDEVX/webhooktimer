@@ -4,7 +4,6 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - TZ=UTC
       - STATE_PATH=/data/state.json
     volumes:
       - ./data:/data

@@ -29,6 +29,10 @@ type Manager struct {
 }
 
 func New(st *store.Store, location *time.Location) *Manager {
+	if location == nil {
+		location = time.Local
+	}
+
 	return &Manager{
 		store:    st,
 		location: location,
