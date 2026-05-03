@@ -1,0 +1,8 @@
+.git
+.gitignore
+.github
+/data
+/bin
+/vendor
+*.db
+*.log

@@ -6,3 +6,5 @@ webhooktimer
 *.exe
 *.test
 .DS_Store
+/data/
+*.corrupt-*
