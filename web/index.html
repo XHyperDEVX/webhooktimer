@@ -28,9 +28,23 @@
       line-height: 1.4;
     }
 
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
     h1, h2 { margin: 0 0 12px; font-weight: 600; }
-    h1 { font-size: 22px; }
+    h1 { font-size: 22px; margin-bottom: 0; }
     h2 { font-size: 18px; }
+
+    .clock {
+      font-size: 12px;
+      color: var(--subtle);
+      white-space: nowrap;
+    }
 
     .layout {
       display: grid;
@@ -49,12 +63,14 @@
     .row { display: grid; gap: 8px; margin-bottom: 10px; }
     label { font-size: 12px; color: var(--subtle); }
     input, select, button {
+      width: 100%;
       font: inherit;
       border-radius: 8px;
       border: 1px solid var(--line);
       background: #111319;
       color: var(--text);
       padding: 8px 10px;
+      min-width: 0;
     }
 
     button {
@@ -66,7 +82,24 @@
     button.danger { background: #402227; border-color: #6c3232; }
 
     .inline { display: flex; gap: 8px; align-items: center; }
-    .inline > * { flex: 1; }
+    .inline > * { flex: 1 1 0; min-width: 0; }
+
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .duration-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .duration-grid .tiny {
+      text-align: center;
+    }
+
     .muted { color: var(--subtle); }
 
     table {
@@ -86,15 +119,6 @@
     .status-err { color: var(--err); }
     .status-warn { color: var(--warn); }
 
-    .pill {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      font-size: 11px;
-      color: var(--subtle);
-    }
-
     .toast {
       margin-bottom: 12px;
       border-radius: 8px;
@@ -111,13 +135,74 @@
 
     .tiny { font-size: 11px; color: var(--subtle); }
 
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #3a4050;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      transition: all 0.2s ease;
+    }
+
+    .switch-slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      top: 2px;
+      background: #d5dbe8;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+
+    .switch input:checked + .switch-slider {
+      background: #2d6fdc;
+      border-color: #2d6fdc;
+    }
+
+    .switch input:checked + .switch-slider::before {
+      transform: translateX(18px);
+    }
+
+    .state-cell {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 24px;
+    }
+
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      .split { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <h1>Webhook Timer</h1>
+  <div class="topbar">
+    <h1>Webhook Timer</h1>
+    <div id="system-time" class="clock">--:--:--</div>
+  </div>
+
   <div class="layout">
     <section class="card">
       <h2 id="form-title">Create entry</h2>
@@ -160,18 +245,59 @@
         </div>
 
         <div id="fixed-wrap" class="row">
-          <label for="fixedSeconds">Fixed interval (seconds)</label>
-          <input id="fixedSeconds" type="number" min="1" value="60" required />
+          <label>Fixed interval</label>
+          <div class="duration-grid">
+            <div>
+              <input id="fixedHours" type="number" min="0" value="0" />
+              <div class="tiny">hours</div>
+            </div>
+            <div>
+              <input id="fixedMinutes" type="number" min="0" max="59" value="1" />
+              <div class="tiny">minutes</div>
+            </div>
+            <div>
+              <input id="fixedSeconds" type="number" min="0" max="59" value="0" />
+              <div class="tiny">seconds</div>
+            </div>
+          </div>
         </div>
 
-        <div id="random-wrap" class="inline row" style="display:none;">
-          <div>
-            <label for="randomMin">Random min (sec)</label>
-            <input id="randomMin" type="number" min="1" value="30" />
-          </div>
-          <div>
-            <label for="randomMax">Random max (sec)</label>
-            <input id="randomMax" type="number" min="1" value="120" />
+        <div id="random-wrap" class="row" style="display:none;">
+          <div class="split">
+            <div>
+              <label>Random min</label>
+              <div class="duration-grid">
+                <div>
+                  <input id="randomMinHours" type="number" min="0" value="0" />
+                  <div class="tiny">hours</div>
+                </div>
+                <div>
+                  <input id="randomMinMinutes" type="number" min="0" max="59" value="0" />
+                  <div class="tiny">minutes</div>
+                </div>
+                <div>
+                  <input id="randomMinSeconds" type="number" min="0" max="59" value="30" />
+                  <div class="tiny">seconds</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label>Random max</label>
+              <div class="duration-grid">
+                <div>
+                  <input id="randomMaxHours" type="number" min="0" value="0" />
+                  <div class="tiny">hours</div>
+                </div>
+                <div>
+                  <input id="randomMaxMinutes" type="number" min="0" max="59" value="2" />
+                  <div class="tiny">minutes</div>
+                </div>
+                <div>
+                  <input id="randomMaxSeconds" type="number" min="0" max="59" value="0" />
+                  <div class="tiny">seconds</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -194,9 +320,10 @@
         </div>
 
         <div class="row">
-          <label class="inline" style="justify-content:flex-start; gap:8px;">
-            <input id="active" type="checkbox" checked style="width:auto; flex:0;" />
-            <span>Enabled</span>
+          <label>State</label>
+          <label class="switch">
+            <input id="active" type="checkbox" checked />
+            <span class="switch-slider"></span>
           </label>
         </div>
 
@@ -210,7 +337,7 @@
     <section class="card">
       <div id="toast" class="toast"></div>
       <h2>Entries</h2>
-      <div class="tiny" style="margin-bottom:8px;">Auto-refresh every 5 seconds. Countdown updates live every second.</div>
+      <div class="tiny" style="margin-bottom:8px;">Auto-refresh and countdown checks run every 0.5 seconds while this tab is visible.</div>
       <table>
         <thead>
           <tr>
@@ -229,7 +356,14 @@
   <script>
     const state = {
       entries: [],
-      timer: null,
+      toastTimer: null,
+      pollTimer: null,
+      countdownTimer: null,
+      clockTimer: null,
+      timeSyncTimer: null,
+      loadingEntries: false,
+      serverOffsetMs: 0,
+      timezone: 'local',
     };
 
     const form = document.getElementById('entry-form');
@@ -242,7 +376,7 @@
     mode.addEventListener('change', () => {
       const isFixed = mode.value === 'fixed';
       fixedWrap.style.display = isFixed ? 'grid' : 'none';
-      randomWrap.style.display = isFixed ? 'none' : 'flex';
+      randomWrap.style.display = isFixed ? 'none' : 'grid';
     });
 
     sleepEnabled.addEventListener('change', () => {
@@ -260,9 +394,9 @@
         webhookURL: document.getElementById('webhookURL').value.trim(),
         method: document.getElementById('method').value,
         mode: document.getElementById('mode').value,
-        fixedSeconds: Number(document.getElementById('fixedSeconds').value || 0),
-        randomMin: Number(document.getElementById('randomMin').value || 0),
-        randomMax: Number(document.getElementById('randomMax').value || 0),
+        fixedSeconds: durationFromInputs('fixed'),
+        randomMin: durationFromInputs('randomMin'),
+        randomMax: durationFromInputs('randomMax'),
         timeoutSeconds: Number(document.getElementById('timeoutSeconds').value || 10),
         sleepEnabled: document.getElementById('sleepEnabled').checked,
         sleepStart: document.getElementById('sleepStart').value,
@@ -293,7 +427,30 @@
       }
     });
 
+    function durationFromInputs(prefix) {
+      const hours = Number(document.getElementById(`${prefix}Hours`).value || 0);
+      const minutes = Number(document.getElementById(`${prefix}Minutes`).value || 0);
+      const seconds = Number(document.getElementById(`${prefix}Seconds`).value || 0);
+      return Math.max(0, hours) * 3600 + Math.max(0, minutes) * 60 + Math.max(0, seconds);
+    }
+
+    function fillDuration(prefix, totalSeconds) {
+      const safe = Math.max(0, Number(totalSeconds || 0));
+      const hours = Math.floor(safe / 3600);
+      const minutes = Math.floor((safe % 3600) / 60);
+      const seconds = safe % 60;
+
+      document.getElementById(`${prefix}Hours`).value = String(hours);
+      document.getElementById(`${prefix}Minutes`).value = String(minutes);
+      document.getElementById(`${prefix}Seconds`).value = String(seconds);
+    }
+
     async function loadEntries() {
+      if (state.loadingEntries || document.visibilityState !== 'visible') {
+        return;
+      }
+
+      state.loadingEntries = true;
       try {
         const response = await fetch('/api/entries');
         if (!response.ok) {
@@ -303,6 +460,29 @@
         renderEntries();
       } catch (error) {
         showToast(error.message, false);
+      } finally {
+        state.loadingEntries = false;
+      }
+    }
+
+    async function syncSystemTime() {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/time');
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        if (typeof data.unixMs === 'number') {
+          state.serverOffsetMs = data.unixMs - Date.now();
+        }
+        if (typeof data.timezone === 'string' && data.timezone) {
+          state.timezone = data.timezone;
+        }
+      } catch (_) {
       }
     }
 
@@ -329,7 +509,7 @@
         title.textContent = entry.name;
         const sub = document.createElement('div');
         sub.className = 'tiny';
-        sub.textContent = `${entry.method} • ${entry.mode === 'fixed' ? `${entry.fixedSeconds}s` : `${entry.randomMin}-${entry.randomMax}s`}`;
+        sub.textContent = `${entry.method} • ${entry.mode === 'fixed' ? formatDuration(entry.fixedSeconds) : `${formatDuration(entry.randomMin)} - ${formatDuration(entry.randomMax)}`}`;
         nameTd.appendChild(title);
         nameTd.appendChild(sub);
 
@@ -341,22 +521,10 @@
         }
 
         const stateTd = document.createElement('td');
-        const toggleWrap = document.createElement('div');
-        toggleWrap.className = 'inline';
-        toggleWrap.style.gap = '6px';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = !!entry.active;
-        checkbox.style.width = 'auto';
-        checkbox.addEventListener('change', () => toggleEntry(entry.id, checkbox.checked));
-
-        const statusText = document.createElement('span');
-        statusText.className = 'pill';
-        statusText.textContent = entry.active ? 'enabled' : 'disabled';
-
-        toggleWrap.appendChild(checkbox);
-        toggleWrap.appendChild(statusText);
-        stateTd.appendChild(toggleWrap);
+        const stateWrap = document.createElement('div');
+        stateWrap.className = 'state-cell';
+        stateWrap.appendChild(switchControl(entry.active, (checked) => toggleEntry(entry.id, checked), `Toggle ${entry.name}`));
+        stateTd.appendChild(stateWrap);
 
         const nextTd = document.createElement('td');
         nextTd.className = 'countdown';
@@ -371,7 +539,11 @@
         result.className = 'tiny';
         result.textContent = entry.lastResult || '';
         if (entry.lastResult) {
-          result.classList.add(entry.lastResult.startsWith('success') ? 'status-ok' : 'status-err');
+          if (entry.lastResult.toLowerCase().startsWith('skipped')) {
+            result.classList.add('status-warn');
+          } else {
+            result.classList.add(entry.lastResult.startsWith('success') ? 'status-ok' : 'status-err');
+          }
         }
         lastTd.appendChild(last);
         lastTd.appendChild(result);
@@ -389,7 +561,7 @@
 
         const logs = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = `Logs (${entry.logs ? entry.logs.length : 0})`;
+        summary.textContent = `Logs (${entry.logs ? entry.logs.length : 0}/15)`;
         logs.appendChild(summary);
 
         const logsWrap = document.createElement('div');
@@ -405,9 +577,10 @@
           for (const log of logsList) {
             const line = document.createElement('div');
             line.className = 'tiny';
-            const mark = log.success ? '✓' : '✕';
+            const skipped = String(log.message || '').toLowerCase().startsWith('skipped');
+            const mark = skipped ? '•' : (log.success ? '✓' : '✕');
             line.textContent = `${mark} ${formatDate(log.timestamp)} • ${log.trigger} • ${log.message} • ${log.durationMs}ms`;
-            line.classList.add(log.success ? 'status-ok' : 'status-err');
+            line.classList.add(skipped ? 'status-warn' : (log.success ? 'status-ok' : 'status-err'));
             logsWrap.appendChild(line);
           }
         }
@@ -422,6 +595,26 @@
 
         tbody.appendChild(tr);
       }
+    }
+
+    function switchControl(checked, onChange, title) {
+      const label = document.createElement('label');
+      label.className = 'switch';
+      if (title) {
+        label.title = title;
+      }
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = !!checked;
+      input.addEventListener('change', () => onChange(input.checked));
+
+      const slider = document.createElement('span');
+      slider.className = 'switch-slider';
+
+      label.appendChild(input);
+      label.appendChild(slider);
+      return label;
     }
 
     function button(text, onClick, style) {
@@ -439,9 +632,9 @@
       document.getElementById('webhookURL').value = entry.webhookURL;
       document.getElementById('method').value = entry.method;
       document.getElementById('mode').value = entry.mode;
-      document.getElementById('fixedSeconds').value = entry.fixedSeconds;
-      document.getElementById('randomMin').value = entry.randomMin;
-      document.getElementById('randomMax').value = entry.randomMax;
+      fillDuration('fixed', entry.fixedSeconds);
+      fillDuration('randomMin', entry.randomMin);
+      fillDuration('randomMax', entry.randomMax);
       document.getElementById('timeoutSeconds').value = entry.timeoutSeconds;
       document.getElementById('sleepEnabled').checked = entry.sleepEnabled;
       document.getElementById('sleepStart').value = entry.sleepStart || '23:00';
@@ -457,9 +650,9 @@
     function resetForm() {
       form.reset();
       document.getElementById('entry-id').value = '';
-      document.getElementById('fixedSeconds').value = '60';
-      document.getElementById('randomMin').value = '30';
-      document.getElementById('randomMax').value = '120';
+      fillDuration('fixed', 60);
+      fillDuration('randomMin', 30);
+      fillDuration('randomMax', 120);
       document.getElementById('timeoutSeconds').value = '10';
       document.getElementById('sleepStart').value = '23:00';
       document.getElementById('sleepEnd').value = '06:00';
@@ -520,8 +713,8 @@
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.className = `toast show ${ok ? 'ok' : 'err'}`;
-      clearTimeout(state.timer);
-      state.timer = setTimeout(() => {
+      clearTimeout(state.toastTimer);
+      state.toastTimer = setTimeout(() => {
         toast.className = 'toast';
       }, 2400);
     }
@@ -534,16 +727,30 @@
       if (!active) return 'disabled';
       if (!nextISO) return 'waiting...';
 
-      const diff = Math.floor((new Date(nextISO).getTime() - Date.now()) / 1000);
-      if (diff <= 0) return 'due...';
-      return toClock(diff);
+      const diffMs = new Date(nextISO).getTime() - (Date.now() + state.serverOffsetMs);
+      if (diffMs <= 0) return '00:00:00';
+      return toClock(Math.ceil(diffMs / 1000));
     }
 
     function toClock(totalSeconds) {
-      const h = Math.floor(totalSeconds / 3600);
-      const m = Math.floor((totalSeconds % 3600) / 60);
-      const s = totalSeconds % 60;
+      const safe = Math.max(0, totalSeconds);
+      const h = Math.floor(safe / 3600);
+      const m = Math.floor((safe % 3600) / 60);
+      const s = safe % 60;
       return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+    }
+
+    function formatDuration(totalSeconds) {
+      const safe = Math.max(0, Number(totalSeconds || 0));
+      const h = Math.floor(safe / 3600);
+      const m = Math.floor((safe % 3600) / 60);
+      const s = safe % 60;
+
+      const parts = [];
+      if (h) parts.push(`${h}h`);
+      if (m) parts.push(`${m}m`);
+      if (s || parts.length === 0) parts.push(`${s}s`);
+      return parts.join(' ');
     }
 
     function updateCountdowns() {
@@ -554,11 +761,56 @@
       });
     }
 
-    setInterval(updateCountdowns, 1000);
-    setInterval(loadEntries, 5000);
+    function updateClock() {
+      const clock = document.getElementById('system-time');
+      const now = new Date(Date.now() + state.serverOffsetMs);
+      const time = [
+        String(now.getHours()).padStart(2, '0'),
+        String(now.getMinutes()).padStart(2, '0'),
+        String(now.getSeconds()).padStart(2, '0'),
+      ].join(':');
+      clock.textContent = `${time} (${state.timezone})`;
+    }
+
+    function startLiveUpdates() {
+      if (state.pollTimer || document.visibilityState !== 'visible') {
+        return;
+      }
+
+      loadEntries();
+      syncSystemTime();
+      updateClock();
+      updateCountdowns();
+
+      state.pollTimer = setInterval(loadEntries, 500);
+      state.countdownTimer = setInterval(updateCountdowns, 500);
+      state.clockTimer = setInterval(updateClock, 500);
+      state.timeSyncTimer = setInterval(syncSystemTime, 30000);
+    }
+
+    function stopLiveUpdates() {
+      clearInterval(state.pollTimer);
+      clearInterval(state.countdownTimer);
+      clearInterval(state.clockTimer);
+      clearInterval(state.timeSyncTimer);
+      state.pollTimer = null;
+      state.countdownTimer = null;
+      state.clockTimer = null;
+      state.timeSyncTimer = null;
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        startLiveUpdates();
+      } else {
+        stopLiveUpdates();
+      }
+    });
+
+    window.addEventListener('beforeunload', stopLiveUpdates);
 
     resetForm();
-    loadEntries();
+    startLiveUpdates();
   </script>
 </body>
 </html>
