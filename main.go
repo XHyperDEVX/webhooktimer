@@ -1,69 +1,92 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "os"
-    "path/filepath"
-    "webhooktimer/internal/handlers"
-    "webhooktimer/internal/models"
-    "webhooktimer/internal/timer"
+	"context"
+	"embed"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+	"webhooktimer/internal/scheduler"
+	"webhooktimer/internal/server"
+	"webhooktimer/internal/store"
 
-    "github.com/go-chi/chi/v5"
-    "github.com/go-chi/chi/v5/middleware"
+	_ "time/tzdata"
 )
 
+//go:embed web/index.html
+var webFiles embed.FS
+
 func main() {
-    dbPath := os.Getenv("DB_PATH")
-    if dbPath == "" {
-        dbPath = "/data/timers.db"
-    }
+	port := envOrDefault("PORT", "8080")
+	statePath := envOrDefault("STATE_PATH", "/data/state.json")
+	timezoneName := envOrDefault("TZ", "UTC")
 
-    // Ensure directory exists
-    if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
-        log.Fatal(err)
-    }
+	location, err := time.LoadLocation(timezoneName)
+	if err != nil {
+		log.Printf("invalid TZ %q, using UTC", timezoneName)
+		location = time.UTC
+	}
 
-    if err := models.InitDB(dbPath); err != nil {
-        log.Fatal(err)
-    }
+	st := store.New(statePath)
+	if err := st.Load(); err != nil {
+		log.Fatalf("could not load state: %v", err)
+	}
 
-    manager := timer.NewManager(models.DB)
-    if err := manager.StartAll(); err != nil {
-        log.Fatal(err)
-    }
+	sched := scheduler.New(st, location)
+	sched.Start()
+	defer sched.Shutdown()
 
-    h := handlers.NewHandler(manager)
+	indexHTML, err := webFiles.ReadFile("web/index.html")
+	if err != nil {
+		log.Fatalf("could not load UI: %v", err)
+	}
 
-    r := chi.NewRouter()
-    r.Use(middleware.Logger)
-    r.Use(middleware.Recoverer)
+	api := server.New(st, sched, indexHTML)
+	httpServer := &http.Server{
+		Addr:              ":" + port,
+		Handler:           loggingMiddleware(api.Routes()),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       90 * time.Second,
+	}
 
-    r.Get("/api/timers", h.GetTimers)
-    r.Post("/api/timers", h.CreateTimer)
-    r.Put("/api/timers/{id}", h.UpdateTimer)
-    r.Delete("/api/timers/{id}", h.DeleteTimer)
-    r.Post("/api/timers/{id}/toggle", h.ToggleTimer)
-    r.Post("/api/timers/{id}/call", h.CallNow)
-    r.Get("/api/timers/{id}/logs", h.GetLogs)
-    r.HandleFunc("/ws", h.HandleWS)
+	go func() {
+		log.Printf("webhooktimer listening on :%s (TZ=%s)", port, location.String())
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server stopped: %v", err)
+		}
+	}()
 
-    // Serve static files
-    r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-        http.ServeFile(w, r, "web/templates/index.html")
-    })
-    
-    // Create a file server for static assets
-    staticDir := http.Dir("web/static")
-    r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(staticDir)))
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
 
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080"
-    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Printf("graceful shutdown failed: %v", err)
+	}
+}
 
-    log.Printf("Server starting on port %s", port)
-    if err := http.ListenAndServe(":"+port, r); err != nil {
-        log.Fatal(err)
-    }
+func envOrDefault(key string, fallback string) string {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start).Round(time.Millisecond))
+		}
+	})
 }

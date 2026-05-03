@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webhook Timer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #181a20;
+      --line: #2b2f3a;
+      --text: #eceff4;
+      --subtle: #a0a7b8;
+      --ok: #2e9d67;
+      --warn: #d6942f;
+      --err: #c85151;
+      --accent: #4a8af4;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      line-height: 1.4;
+    }
+
+    h1, h2 { margin: 0 0 12px; font-weight: 600; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+
+    .layout {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 340px 1fr;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .row { display: grid; gap: 8px; margin-bottom: 10px; }
+    label { font-size: 12px; color: var(--subtle); }
+    input, select, button {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #111319;
+      color: var(--text);
+      padding: 8px 10px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #212533;
+    }
+    button:hover { border-color: #3e4657; }
+    button.primary { background: var(--accent); border-color: #2d6fdc; color: #fff; }
+    button.danger { background: #402227; border-color: #6c3232; }
+
+    .inline { display: flex; gap: 8px; align-items: center; }
+    .inline > * { flex: 1; }
+    .muted { color: var(--subtle); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--subtle); font-weight: 500; }
+
+    .status-ok { color: var(--ok); }
+    .status-err { color: var(--err); }
+    .status-warn { color: var(--warn); }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--subtle);
+    }
+
+    .toast {
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      display: none;
+    }
+    .toast.show { display: block; }
+    .toast.ok { background: #173225; border-color: #295e43; }
+    .toast.err { background: #3a1f24; border-color: #6f3641; }
+
+    details { margin-top: 8px; }
+    summary { cursor: pointer; color: var(--subtle); }
+
+    .tiny { font-size: 11px; color: var(--subtle); }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Webhook Timer</h1>
+  <div class="layout">
+    <section class="card">
+      <h2 id="form-title">Create entry</h2>
+      <form id="entry-form">
+        <input type="hidden" id="entry-id" />
+
+        <div class="row">
+          <label for="name">Name</label>
+          <input id="name" required maxlength="80" placeholder="Daily import" />
+        </div>
+
+        <div class="row">
+          <label for="webhookURL">Webhook URL</label>
+          <input id="webhookURL" type="url" required placeholder="https://..." />
+        </div>
+
+        <div class="inline row">
+          <div>
+            <label for="method">Method</label>
+            <select id="method">
+              <option>POST</option>
+              <option>GET</option>
+              <option>PUT</option>
+              <option>PATCH</option>
+              <option>DELETE</option>
+            </select>
+          </div>
+          <div>
+            <label for="timeoutSeconds">Timeout (sec)</label>
+            <input id="timeoutSeconds" type="number" min="1" max="600" value="10" required />
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="mode">Interval mode</label>
+          <select id="mode">
+            <option value="fixed">Fixed</option>
+            <option value="random">Random</option>
+          </select>
+        </div>
+
+        <div id="fixed-wrap" class="row">
+          <label for="fixedSeconds">Fixed interval (seconds)</label>
+          <input id="fixedSeconds" type="number" min="1" value="60" required />
+        </div>
+
+        <div id="random-wrap" class="inline row" style="display:none;">
+          <div>
+            <label for="randomMin">Random min (sec)</label>
+            <input id="randomMin" type="number" min="1" value="30" />
+          </div>
+          <div>
+            <label for="randomMax">Random max (sec)</label>
+            <input id="randomMax" type="number" min="1" value="120" />
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="inline" style="justify-content:flex-start; gap:8px;">
+            <input id="sleepEnabled" type="checkbox" style="width:auto; flex:0;" />
+            <span>Sleep window (do not execute)</span>
+          </label>
+        </div>
+
+        <div id="sleep-wrap" class="inline row" style="display:none;">
+          <div>
+            <label for="sleepStart">Sleep start</label>
+            <input id="sleepStart" type="time" value="23:00" />
+          </div>
+          <div>
+            <label for="sleepEnd">Sleep end</label>
+            <input id="sleepEnd" type="time" value="06:00" />
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="inline" style="justify-content:flex-start; gap:8px;">
+            <input id="active" type="checkbox" checked style="width:auto; flex:0;" />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <div class="inline">
+          <button class="primary" type="submit">Save</button>
+          <button id="reset-btn" type="button">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div id="toast" class="toast"></div>
+      <h2>Entries</h2>
+      <div class="tiny" style="margin-bottom:8px;">Auto-refresh every 5 seconds. Countdown updates live every second.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>State</th>
+            <th>Next run</th>
+            <th>Last run</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="entries"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      entries: [],
+      timer: null,
+    };
+
+    const form = document.getElementById('entry-form');
+    const mode = document.getElementById('mode');
+    const fixedWrap = document.getElementById('fixed-wrap');
+    const randomWrap = document.getElementById('random-wrap');
+    const sleepEnabled = document.getElementById('sleepEnabled');
+    const sleepWrap = document.getElementById('sleep-wrap');
+
+    mode.addEventListener('change', () => {
+      const isFixed = mode.value === 'fixed';
+      fixedWrap.style.display = isFixed ? 'grid' : 'none';
+      randomWrap.style.display = isFixed ? 'none' : 'flex';
+    });
+
+    sleepEnabled.addEventListener('change', () => {
+      sleepWrap.style.display = sleepEnabled.checked ? 'flex' : 'none';
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', resetForm);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const id = document.getElementById('entry-id').value;
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        webhookURL: document.getElementById('webhookURL').value.trim(),
+        method: document.getElementById('method').value,
+        mode: document.getElementById('mode').value,
+        fixedSeconds: Number(document.getElementById('fixedSeconds').value || 0),
+        randomMin: Number(document.getElementById('randomMin').value || 0),
+        randomMax: Number(document.getElementById('randomMax').value || 0),
+        timeoutSeconds: Number(document.getElementById('timeoutSeconds').value || 10),
+        sleepEnabled: document.getElementById('sleepEnabled').checked,
+        sleepStart: document.getElementById('sleepStart').value,
+        sleepEnd: document.getElementById('sleepEnd').value,
+        active: document.getElementById('active').checked,
+      };
+
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/entries/${id}` : '/api/entries';
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Save failed');
+        }
+
+        showToast('Saved', true);
+        resetForm();
+        await loadEntries();
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    });
+
+    async function loadEntries() {
+      try {
+        const response = await fetch('/api/entries');
+        if (!response.ok) {
+          throw new Error('Could not load entries');
+        }
+        state.entries = await response.json();
+        renderEntries();
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    }
+
+    function renderEntries() {
+      const tbody = document.getElementById('entries');
+      tbody.innerHTML = '';
+
+      if (state.entries.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 5;
+        td.className = 'muted';
+        td.textContent = 'No entries yet.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      for (const entry of state.entries) {
+        const tr = document.createElement('tr');
+
+        const nameTd = document.createElement('td');
+        const title = document.createElement('div');
+        title.textContent = entry.name;
+        const sub = document.createElement('div');
+        sub.className = 'tiny';
+        sub.textContent = `${entry.method} • ${entry.mode === 'fixed' ? `${entry.fixedSeconds}s` : `${entry.randomMin}-${entry.randomMax}s`}`;
+        nameTd.appendChild(title);
+        nameTd.appendChild(sub);
+
+        if (entry.sleepEnabled) {
+          const sleep = document.createElement('div');
+          sleep.className = 'tiny';
+          sleep.textContent = `sleep ${entry.sleepStart} - ${entry.sleepEnd}`;
+          nameTd.appendChild(sleep);
+        }
+
+        const stateTd = document.createElement('td');
+        const toggleWrap = document.createElement('div');
+        toggleWrap.className = 'inline';
+        toggleWrap.style.gap = '6px';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = !!entry.active;
+        checkbox.style.width = 'auto';
+        checkbox.addEventListener('change', () => toggleEntry(entry.id, checkbox.checked));
+
+        const statusText = document.createElement('span');
+        statusText.className = 'pill';
+        statusText.textContent = entry.active ? 'enabled' : 'disabled';
+
+        toggleWrap.appendChild(checkbox);
+        toggleWrap.appendChild(statusText);
+        stateTd.appendChild(toggleWrap);
+
+        const nextTd = document.createElement('td');
+        nextTd.className = 'countdown';
+        nextTd.dataset.next = entry.nextExecution || '';
+        nextTd.dataset.active = entry.active ? '1' : '0';
+        nextTd.textContent = countdownText(nextTd.dataset.next, entry.active);
+
+        const lastTd = document.createElement('td');
+        const last = document.createElement('div');
+        last.textContent = entry.lastExecution ? formatDate(entry.lastExecution) : 'never';
+        const result = document.createElement('div');
+        result.className = 'tiny';
+        result.textContent = entry.lastResult || '';
+        if (entry.lastResult) {
+          result.classList.add(entry.lastResult.startsWith('success') ? 'status-ok' : 'status-err');
+        }
+        lastTd.appendChild(last);
+        lastTd.appendChild(result);
+
+        const actionsTd = document.createElement('td');
+        const actions = document.createElement('div');
+        actions.className = 'inline';
+        actions.style.flexWrap = 'wrap';
+
+        actions.appendChild(button('Run now', async () => runNow(entry.id), 'primary'));
+        actions.appendChild(button('Edit', () => editEntry(entry)));
+        actions.appendChild(button('Delete', async () => removeEntry(entry.id), 'danger'));
+
+        actionsTd.appendChild(actions);
+
+        const logs = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = `Logs (${entry.logs ? entry.logs.length : 0})`;
+        logs.appendChild(summary);
+
+        const logsWrap = document.createElement('div');
+        logsWrap.style.marginTop = '6px';
+
+        const logsList = entry.logs || [];
+        if (logsList.length === 0) {
+          const line = document.createElement('div');
+          line.className = 'tiny';
+          line.textContent = 'No executions yet.';
+          logsWrap.appendChild(line);
+        } else {
+          for (const log of logsList) {
+            const line = document.createElement('div');
+            line.className = 'tiny';
+            const mark = log.success ? '✓' : '✕';
+            line.textContent = `${mark} ${formatDate(log.timestamp)} • ${log.trigger} • ${log.message} • ${log.durationMs}ms`;
+            line.classList.add(log.success ? 'status-ok' : 'status-err');
+            logsWrap.appendChild(line);
+          }
+        }
+        logs.appendChild(logsWrap);
+        actionsTd.appendChild(logs);
+
+        tr.appendChild(nameTd);
+        tr.appendChild(stateTd);
+        tr.appendChild(nextTd);
+        tr.appendChild(lastTd);
+        tr.appendChild(actionsTd);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function button(text, onClick, style) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = text;
+      if (style) btn.classList.add(style);
+      btn.addEventListener('click', onClick);
+      return btn;
+    }
+
+    function editEntry(entry) {
+      document.getElementById('entry-id').value = entry.id;
+      document.getElementById('name').value = entry.name;
+      document.getElementById('webhookURL').value = entry.webhookURL;
+      document.getElementById('method').value = entry.method;
+      document.getElementById('mode').value = entry.mode;
+      document.getElementById('fixedSeconds').value = entry.fixedSeconds;
+      document.getElementById('randomMin').value = entry.randomMin;
+      document.getElementById('randomMax').value = entry.randomMax;
+      document.getElementById('timeoutSeconds').value = entry.timeoutSeconds;
+      document.getElementById('sleepEnabled').checked = entry.sleepEnabled;
+      document.getElementById('sleepStart').value = entry.sleepStart || '23:00';
+      document.getElementById('sleepEnd').value = entry.sleepEnd || '06:00';
+      document.getElementById('active').checked = entry.active;
+      document.getElementById('form-title').textContent = `Edit: ${entry.name}`;
+
+      mode.dispatchEvent(new Event('change'));
+      sleepEnabled.dispatchEvent(new Event('change'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+      form.reset();
+      document.getElementById('entry-id').value = '';
+      document.getElementById('fixedSeconds').value = '60';
+      document.getElementById('randomMin').value = '30';
+      document.getElementById('randomMax').value = '120';
+      document.getElementById('timeoutSeconds').value = '10';
+      document.getElementById('sleepStart').value = '23:00';
+      document.getElementById('sleepEnd').value = '06:00';
+      document.getElementById('active').checked = true;
+      document.getElementById('form-title').textContent = 'Create entry';
+      mode.dispatchEvent(new Event('change'));
+      sleepEnabled.dispatchEvent(new Event('change'));
+    }
+
+    async function toggleEntry(id, active) {
+      try {
+        const response = await fetch(`/api/entries/${id}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || 'Toggle failed');
+        }
+        await loadEntries();
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    }
+
+    async function runNow(id) {
+      try {
+        const response = await fetch(`/api/entries/${id}/execute`, { method: 'POST' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || 'Execution failed');
+        }
+        showToast(`Executed: ${data.message} (${data.durationMs}ms)`, data.success);
+        await loadEntries();
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    }
+
+    async function removeEntry(id) {
+      if (!confirm('Delete this entry?')) return;
+
+      try {
+        const response = await fetch(`/api/entries/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || 'Delete failed');
+        }
+        showToast('Deleted', true);
+        await loadEntries();
+      } catch (error) {
+        showToast(error.message, false);
+      }
+    }
+
+    function showToast(message, ok) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast show ${ok ? 'ok' : 'err'}`;
+      clearTimeout(state.timer);
+      state.timer = setTimeout(() => {
+        toast.className = 'toast';
+      }, 2400);
+    }
+
+    function formatDate(value) {
+      return new Date(value).toLocaleString();
+    }
+
+    function countdownText(nextISO, active) {
+      if (!active) return 'disabled';
+      if (!nextISO) return 'waiting...';
+
+      const diff = Math.floor((new Date(nextISO).getTime() - Date.now()) / 1000);
+      if (diff <= 0) return 'due...';
+      return toClock(diff);
+    }
+
+    function toClock(totalSeconds) {
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+    }
+
+    function updateCountdowns() {
+      document.querySelectorAll('.countdown').forEach((node) => {
+        const next = node.dataset.next;
+        const active = node.dataset.active === '1';
+        node.textContent = countdownText(next, active);
+      });
+    }
+
+    setInterval(updateCountdowns, 1000);
+    setInterval(loadEntries, 5000);
+
+    resetForm();
+    loadEntries();
+  </script>
+</body>
+</html>
