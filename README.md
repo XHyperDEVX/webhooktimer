@@ -3,12 +3,15 @@
 A minimalistic timer for webhooks, designed specifically for N8N Webhooks.
 
 ## Features
-- Minimalistic Go-based daemon
-- SQLite persistence for configuration
-- Web-UI for managing timers
-- Support for Fixed and Random intervals
-- WebSocket for live countdown updates
-- Ultra-lightweight Docker Image (~26MB)
+- Minimalistic Go-based daemon with embedded web UI
+- JSON file persistence for entries and execution logs (`/data/state.json` by default)
+- Fixed and Random interval modes
+- Duration inputs for hours, minutes, and seconds (Fixed + Random min/max)
+- Per-entry enable/disable state toggle
+- Sleep window support with skip logging when a trigger happens during sleep mode
+- Live UI refresh/countdown updates every 0.5 seconds while the UI tab is visible
+- Per-entry execution history (last 15 messages)
+- Built-in health endpoints (`/healthz`) and container health check command
 
 ## ⚠️ AI GENERATED PROJECT ⚠️
 
@@ -26,10 +29,19 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/data
+    environment:
+      - TZ=UTC
+      - STATE_PATH=/data/state.json
+    healthcheck:
+      test: ["CMD", "/webhooktimer", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 ```
 
 ## Local Development
-1. Install Go 1.23+
+1. Install Go 1.22+
 2. `go run main.go`
 3. Access UI at `http://localhost:8080`

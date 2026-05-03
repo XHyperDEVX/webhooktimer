@@ -22,4 +22,6 @@ ENV PORT=8080
 ENV STATE_PATH=/data/state.json
 ENV TZ=UTC
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD ["/webhooktimer", "healthcheck"]
+
 ENTRYPOINT ["/webhooktimer"]
